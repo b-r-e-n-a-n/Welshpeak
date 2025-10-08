@@ -9,77 +9,86 @@
       textarea { width: 100%; max-width: 720px; font-size: 18px; padding: 8px; }
       button { font-size: 16px; padding: 6px 12px; margin-top: 8px; margin-right: 8px; }
       .muted { color:#666; max-width: 720px; }
+      #status { margin-top: 8px; }
     </style>
   </head>
   <body>
     <h1>Welshpeak</h1>
-    <p class="muted">Type Welsh text for this first test (e.g., <i>Cymru am byth</i>). We’ll switch to IPA input next.</p>
+    <p class="muted">For this test, type normal Welsh text (e.g., <i>Cymru am byth</i>). We’ll switch to IPA after the engine API is confirmed.</p>
 
     <textarea id="ipaInput" rows="3" placeholder="Cymru am byth"></textarea><br/>
     <button id="playBtn">Play</button>
     <button id="stopBtn">Stop</button>
+    <div id="status" class="muted"></div>
 
     <script type="module">
       import initEspeak from "./vendor/espeakng/espeak-ng.js";
 
-      let Module = null;
-      let api = null;
+      const statusEl = document.getElementById("status");
+      const setStatus = (msg) => statusEl.textContent = msg;
 
-      // Initialize WASM and bind the eSpeak C API
+      let Module = null;
+
       try {
         Module = await initEspeak({
-          locateFile: (path) => `./vendor/espeakng/${path}`
+          locateFile: (p) => `./vendor/espeakng/${p}`
         });
         console.log("eSpeak-NG initialized?", !!Module);
 
-        // cwrap the functions we need
-        const cwrap = Module.cwrap;
-        if (typeof cwrap !== "function") {
-          throw new Error("Module.cwrap not available");
-        }
+        // Show keys so we can see what's exposed
+        const keys = Object.keys(Module).sort();
+        console.log("Module keys:", keys);
 
-        api = {
-          espeak_Initialize: cwrap("espeak_Initialize", "number", ["number","number","string","number"]),
-          espeak_SetVoiceByName: cwrap("espeak_SetVoiceByName", "number", ["string"]),
-          espeak_Synth: cwrap("espeak_Synth", "number", ["string","number","number","number","number","number","number","number"]),
-          espeak_Synchronize: cwrap("espeak_Synchronize", "number", [])
+        // Try to detect a high-level API
+        const setVoice = Module.setVoice || Module.setVoiceName || Module.loadVoice || Module.setvoice || null;
+        const speak = Module.speak || Module.synthesize || Module.say || null;
+
+        console.log("Has setVoice-like:", !!setVoice);
+        console.log("Has speak-like:", !!speak);
+
+        // Wire Play using whatever is available
+        document.getElementById("playBtn").onclick = async () => {
+          const text = (document.getElementById("ipaInput").value || "Cymru am byth").trim();
+
+          if (setVoice && speak) {
+            try {
+              // try setting Welsh (cy); some builds accept 'cy' or 'welsh'
+              const voiceCode = "cy";
+              const vr = await Promise.resolve(setVoice.call(Module, voiceCode));
+              console.log("setVoice result:", vr);
+            } catch (e) {
+              console.warn("setVoice failed (continuing):", e);
+            }
+
+            try {
+              const r = await Promise.resolve(speak.call(Module, text));
+              console.log("speak result:", r);
+              setStatus("Played via high-level API.");
+            } catch (e) {
+              console.error("speak failed:", e);
+              setStatus("High-level speak failed. Check console.");
+            }
+            return;
+          }
+
+          setStatus("Engine API not available in this build (no speak()/setVoice()). We’ll switch approach next.");
+          console.warn("No high-level API found; keys:", keys);
         };
 
-        // AUDIO_OUTPUT_PLAYBACK = 0 in eSpeak NG
-        const AUDIO_OUTPUT_PLAYBACK = 0;
-        const initRc = api.espeak_Initialize(AUDIO_OUTPUT_PLAYBACK, 0, null, 0);
-        console.log("espeak_Initialize rc:", initRc);
-
-        // Set Welsh voice
-        const vrc = api.espeak_SetVoiceByName("cy");
-        console.log("espeak_SetVoiceByName('cy') rc:", vrc);
+        document.getElementById("stopBtn").onclick = () => {
+          // Some builds expose stop()/cancel(); attempt if present
+          const stop = Module.stop || Module.cancel || null;
+          if (stop) {
+            try { stop.call(Module); setStatus("Stopped."); } catch(e) { console.warn("stop failed:", e); }
+          } else {
+            setStatus("Stop not supported in this build.");
+          }
+        };
 
       } catch (err) {
         console.error("eSpeak-NG init failed:", err);
+        setStatus("Engine failed to initialize. See console.");
       }
-
-      // Speak helper
-      function speakText(text) {
-        if (!api) { console.error("API not ready"); return; }
-        if (!text || !text.trim()) text = "Cymru am byth";
-
-        // espeak_Synth parameters:
-        // (text, size, position, position_type, end_position, flags, unique_id, user_data)
-        const rc = api.espeak_Synth(text, text.length + 1, 0, 0, 0, 0, 0, 0);
-        console.log("espeak_Synth rc:", rc);
-        api.espeak_Synchronize(); // wait until finished
-      }
-
-      // Wire buttons
-      document.getElementById("playBtn").onclick = () => {
-        const t = document.getElementById("ipaInput").value || "Cymru am byth";
-        speakText(t);
-      };
-      document.getElementById("stopBtn").onclick = () => {
-        // eSpeak NG doesn't expose an immediate stop in this minimal binding;
-        // for now we just log. (We can add stop via audio worklets later.)
-        console.log("Stop requested");
-      };
     </script>
   </body>
 </html>
