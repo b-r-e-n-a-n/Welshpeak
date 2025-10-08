@@ -6,7 +6,35 @@
     <title>Welshpeak</title>
   </head>
   <body>
-    <h1>Welshpeak</h1>
-    <p>IPA → Welsh TTS (browser-only). UI coming next…</p>
-  </body>
+  <h1>Welshpeak</h1>
+  <p>IPA → Welsh TTS (browser-only)</p>
+
+  <textarea id="ipaInput" rows="3" cols="40" placeholder="Type IPA here..."></textarea><br/>
+  <button onclick="playBeep()">Play</button>
+  <button onclick="stopBeep()">Stop</button>
+
+  <script>
+    let audioCtx;
+    let oscillator;
+
+    function playBeep() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      oscillator = audioCtx.createOscillator();
+      oscillator.type = "sine";
+      oscillator.frequency.value = 440; // A4 note
+      oscillator.connect(audioCtx.destination);
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.5); // play 0.5 sec
+    }
+
+    function stopBeep() {
+      if (oscillator) {
+        oscillator.stop();
+        oscillator.disconnect();
+      }
+    }
+  </script>
+</body>
 </html>
