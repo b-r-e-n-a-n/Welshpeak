@@ -8,44 +8,78 @@
       body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 32px; }
       textarea { width: 100%; max-width: 720px; font-size: 18px; padding: 8px; }
       button { font-size: 16px; padding: 6px 12px; margin-top: 8px; margin-right: 8px; }
+      .muted { color:#666; max-width: 720px; }
     </style>
   </head>
   <body>
     <h1>Welshpeak</h1>
-    <p>IPA → Welsh TTS (browser-only)</p>
+    <p class="muted">Type Welsh text for this first test (e.g., <i>Cymru am byth</i>). We’ll switch to IPA input next.</p>
 
-    <textarea id="ipaInput" rows="3" placeholder="Type IPA here (e.g., ˈkəmrɨ)"></textarea><br/>
+    <textarea id="ipaInput" rows="3" placeholder="Cymru am byth"></textarea><br/>
     <button id="playBtn">Play</button>
     <button id="stopBtn">Stop</button>
 
     <script type="module">
-      // Load the eSpeak-NG WebAssembly module (copied to docs/vendor/espeakng/)
       import initEspeak from "./vendor/espeakng/espeak-ng.js";
 
       let Module = null;
+      let api = null;
 
+      // Initialize WASM and bind the eSpeak C API
       try {
         Module = await initEspeak({
-          // Tell the loader where to fetch the .wasm from
           locateFile: (path) => `./vendor/espeakng/${path}`
         });
         console.log("eSpeak-NG initialized?", !!Module);
 
-        // Inspect available exports so we know what to call for synthesis
-        const keys = Object.keys(Module).sort();
-        console.log("Module keys sample:", keys.slice(0, 40));
-        console.log("Has cwrap?", typeof Module.cwrap === "function");
-        console.log("Has speak()?", typeof Module.speak === "function");
-        console.log("Has espeak_Synth?", keys.find(k => k.includes("espeak_Synth")));
+        // cwrap the functions we need
+        const cwrap = Module.cwrap;
+        if (typeof cwrap !== "function") {
+          throw new Error("Module.cwrap not available");
+        }
+
+        api = {
+          espeak_Initialize: cwrap("espeak_Initialize", "number", ["number","number","string","number"]),
+          espeak_SetVoiceByName: cwrap("espeak_SetVoiceByName", "number", ["string"]),
+          espeak_Synth: cwrap("espeak_Synth", "number", ["string","number","number","number","number","number","number","number"]),
+          espeak_Synchronize: cwrap("espeak_Synchronize", "number", [])
+        };
+
+        // AUDIO_OUTPUT_PLAYBACK = 0 in eSpeak NG
+        const AUDIO_OUTPUT_PLAYBACK = 0;
+        const initRc = api.espeak_Initialize(AUDIO_OUTPUT_PLAYBACK, 0, null, 0);
+        console.log("espeak_Initialize rc:", initRc);
+
+        // Set Welsh voice
+        const vrc = api.espeak_SetVoiceByName("cy");
+        console.log("espeak_SetVoiceByName('cy') rc:", vrc);
+
       } catch (err) {
         console.error("eSpeak-NG init failed:", err);
       }
 
-      // Temporary handlers (we'll wire real speech next)
+      // Speak helper
+      function speakText(text) {
+        if (!api) { console.error("API not ready"); return; }
+        if (!text || !text.trim()) text = "Cymru am byth";
+
+        // espeak_Synth parameters:
+        // (text, size, position, position_type, end_position, flags, unique_id, user_data)
+        const rc = api.espeak_Synth(text, text.length + 1, 0, 0, 0, 0, 0, 0);
+        console.log("espeak_Synth rc:", rc);
+        api.espeak_Synchronize(); // wait until finished
+      }
+
+      // Wire buttons
       document.getElementById("playBtn").onclick = () => {
-        alert("Engine loaded. Open the browser console to see available functions. We'll hook Play next.");
+        const t = document.getElementById("ipaInput").value || "Cymru am byth";
+        speakText(t);
       };
-      document.getElementById("stopBtn").onclick = () => {};
+      document.getElementById("stopBtn").onclick = () => {
+        // eSpeak NG doesn't expose an immediate stop in this minimal binding;
+        // for now we just log. (We can add stop via audio worklets later.)
+        console.log("Stop requested");
+      };
     </script>
   </body>
 </html>
