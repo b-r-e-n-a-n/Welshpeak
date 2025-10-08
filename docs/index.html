@@ -4,43 +4,48 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Welshpeak</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 32px; }
+      textarea { width: 100%; max-width: 720px; font-size: 18px; padding: 8px; }
+      button { font-size: 16px; padding: 6px 12px; margin-top: 8px; margin-right: 8px; }
+    </style>
   </head>
   <body>
     <h1>Welshpeak</h1>
     <p>IPA → Welsh TTS (browser-only)</p>
 
-    <textarea id="ipaInput" rows="3" cols="40" placeholder="Type IPA here..."></textarea><br/>
+    <textarea id="ipaInput" rows="3" placeholder="Type IPA here (e.g., ˈkəmrɨ)"></textarea><br/>
     <button id="playBtn">Play</button>
     <button id="stopBtn">Stop</button>
 
-    <!-- eSpeak-NG loader -->
     <script type="module">
+      // Load the eSpeak-NG WebAssembly module (copied to docs/vendor/espeakng/)
       import initEspeak from "./vendor/espeakng/espeak-ng.js";
 
       let Module = null;
 
       try {
-        // Try to initialize with explicit WASM path
         Module = await initEspeak({
+          // Tell the loader where to fetch the .wasm from
           locateFile: (path) => `./vendor/espeakng/${path}`
         });
         console.log("eSpeak-NG initialized?", !!Module);
+
+        // Inspect available exports so we know what to call for synthesis
+        const keys = Object.keys(Module).sort();
+        console.log("Module keys sample:", keys.slice(0, 40));
+        console.log("Has cwrap?", typeof Module.cwrap === "function");
+        console.log("Has speak()?", typeof Module.speak === "function");
+        console.log("Has espeak_Synth?", keys.find(k => k.includes("espeak_Synth")));
       } catch (err) {
         console.error("eSpeak-NG init failed:", err);
       }
 
-      // Button handlers
+      // Temporary handlers (we'll wire real speech next)
       document.getElementById("playBtn").onclick = () => {
-        if (Module) {
-          alert("Engine loaded ✅ (next step: actual speech)");
-        } else {
-          alert("Engine not loaded ❌ — check console");
-        }
+        alert("Engine loaded. Open the browser console to see available functions. We'll hook Play next.");
       };
-
-      document.getElementById("stopBtn").onclick = () => {
-        console.log("Stop clicked (no-op for now)");
-      };
+      document.getElementById("stopBtn").onclick = () => {};
     </script>
   </body>
 </html>
