@@ -6,35 +6,26 @@
     <title>Welshpeak</title>
   </head>
   <body>
-  <h1>Welshpeak</h1>
-  <p>IPA → Welsh TTS (browser-only)</p>
+    <h1>Welshpeak</h1>
+    <p>IPA → Welsh TTS (browser-only)</p>
 
-  <textarea id="ipaInput" rows="3" cols="40" placeholder="Type IPA here..."></textarea><br/>
-  <button onclick="playBeep()">Play</button>
-  <button onclick="stopBeep()">Stop</button>
+    <textarea id="ipaInput" rows="3" cols="40" placeholder="Type IPA here..."></textarea><br/>
+    <button id="playBtn">Play</button>
+    <button id="stopBtn">Stop</button>
 
-  <script>
-    let audioCtx;
-    let oscillator;
+    <!-- Load eSpeak-NG WebAssembly -->
+    <script src="vendor/espeakng/espeak-ng.js"></script>
+    <script>
+      // Just a sanity check for now
+      console.log("eSpeak-NG loader present?", typeof Module !== "undefined");
 
-    function playBeep() {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      oscillator = audioCtx.createOscillator();
-      oscillator.type = "sine";
-      oscillator.frequency.value = 440; // A4 note
-      oscillator.connect(audioCtx.destination);
-      oscillator.start();
-      oscillator.stop(audioCtx.currentTime + 0.5); // play 0.5 sec
-    }
-
-    function stopBeep() {
-      if (oscillator) {
-        oscillator.stop();
-        oscillator.disconnect();
-      }
-    }
-  </script>
-</body>
+      // Placeholder handlers (do nothing yet)
+      document.getElementById("playBtn").onclick = () => {
+        alert("Play clicked — engine wiring next!");
+      };
+      document.getElementById("stopBtn").onclick = () => {
+        alert("Stop clicked — engine wiring next!");
+      };
+    </script>
+  </body>
 </html>
