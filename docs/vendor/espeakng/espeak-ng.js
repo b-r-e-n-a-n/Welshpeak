@@ -1366,6 +1366,7 @@ function dbg(text) {
       }
       return len;
     };
+  Object.defineProperty(Module, 'lengthBytesUTF8', { value: lengthBytesUTF8, configurable: true, writable: true });
   
   var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
       assert(typeof str === 'string', `stringToUTF8Array expects a string (got ${typeof str})`);
@@ -4050,6 +4051,7 @@ function dbg(text) {
       assert(typeof maxBytesToWrite == 'number', 'stringToUTF8(str, outPtr, maxBytesToWrite) is missing the third parameter that specifies the length of the output buffer!');
       return stringToUTF8Array(str, HEAPU8, outPtr, maxBytesToWrite);
     };
+  Object.defineProperty(Module, 'stringToUTF8', { value: stringToUTF8, configurable: true, writable: true });
   
   function ___syscall_getdents64(fd, dirp, count) {
   try {
@@ -4547,6 +4549,7 @@ function dbg(text) {
       stringToUTF8(str, ret, size);
       return ret;
     };
+  Object.defineProperty(Module, 'stringToUTF8OnStack', { value: stringToUTF8OnStack, configurable: true, writable: true });
 
 
 
@@ -4655,6 +4658,7 @@ var wasmImports = {
   fd_write: _fd_write
 };
 var wasmExports = createWasm();
+Object.defineProperty(Module, 'wasmExports', { value: wasmExports, configurable: true, writable: true });
 var ___wasm_call_ctors = createExportWrapper('__wasm_call_ctors');
 var ___errno_location = createExportWrapper('__errno_location');
 var _free = createExportWrapper('free');
@@ -4668,6 +4672,9 @@ var _emscripten_stack_get_end = () => (_emscripten_stack_get_end = wasmExports['
 var stackSave = createExportWrapper('stackSave');
 var stackRestore = createExportWrapper('stackRestore');
 var stackAlloc = createExportWrapper('stackAlloc');
+Object.defineProperty(Module, 'stackSave', { value: stackSave, configurable: true, writable: true });
+Object.defineProperty(Module, 'stackRestore', { value: stackRestore, configurable: true, writable: true });
+Object.defineProperty(Module, 'stackAlloc', { value: stackAlloc, configurable: true, writable: true });
 var _emscripten_stack_get_current = () => (_emscripten_stack_get_current = wasmExports['emscripten_stack_get_current'])();
 var dynCall_jiji = Module['dynCall_jiji'] = createExportWrapper('dynCall_jiji');
 var ___emscripten_embedded_file_data = Module['___emscripten_embedded_file_data'] = 18226032;
@@ -5002,6 +5009,7 @@ function callMain(args = []) {
     return handleException(e);
   }
 }
+Object.defineProperty(Module, 'callMain', { value: callMain, configurable: true, writable: true });
 
 function stackCheckInit() {
   // This is normally called automatically during __wasm_call_ctors but need to
