@@ -3,92 +3,545 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Welshpeak</title>
+    <title>Welshpeak – Welsh IPA Reader</title>
     <style>
-      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 32px; }
-      textarea { width: 100%; max-width: 720px; font-size: 18px; padding: 8px; }
-      button { font-size: 16px; padding: 6px 12px; margin-top: 8px; margin-right: 8px; }
-      .muted { color:#666; max-width: 720px; }
-      #status { margin-top: 8px; }
+      :root {
+        color-scheme: light dark;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+        line-height: 1.55;
+        background: #f5f5f8;
+        color: #1d1b22;
+        min-height: 100vh;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #111217;
+          color: #f1f1f6;
+        }
+      }
+
+      main {
+        max-width: 820px;
+        margin: 0 auto;
+        padding: 48px 24px 64px;
+      }
+
+      h1 {
+        font-size: clamp(2rem, 4vw, 2.75rem);
+        margin-bottom: 0.35em;
+      }
+
+      p.lead {
+        font-size: 1.1rem;
+        max-width: 70ch;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 8rem;
+        resize: vertical;
+        font-size: 1.1rem;
+        padding: 14px 16px;
+        border-radius: 12px;
+        border: 1px solid rgba(0, 0, 0, 0.2);
+        background: rgba(255, 255, 255, 0.9);
+        color: inherit;
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.05);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        textarea {
+          background: rgba(21, 24, 33, 0.9);
+          border-color: rgba(255, 255, 255, 0.1);
+          box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+        }
+      }
+
+      textarea::placeholder {
+        color: rgba(0, 0, 0, 0.4);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        textarea::placeholder {
+          color: rgba(255, 255, 255, 0.35);
+        }
+      }
+
+      .controls {
+        margin-top: 18px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+      }
+
+      button {
+        font-size: 1rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        padding: 10px 20px;
+        border-radius: 999px;
+        border: none;
+        cursor: pointer;
+        transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .primary {
+        background: #2563eb;
+        color: #fff;
+        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.35);
+      }
+
+      .primary:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 16px 32px rgba(37, 99, 235, 0.38);
+      }
+
+      .ghost {
+        background: transparent;
+        color: inherit;
+        border: 1px solid currentColor;
+        box-shadow: none;
+      }
+
+      .ghost:hover:not(:disabled) {
+        transform: translateY(-1px);
+      }
+
+      #status {
+        flex: 1 1 200px;
+        font-size: 0.95rem;
+        color: rgba(17, 24, 39, 0.75);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        #status {
+          color: rgba(226, 232, 240, 0.75);
+        }
+      }
+
+      details {
+        margin-top: 28px;
+        background: rgba(148, 163, 184, 0.12);
+        border-radius: 14px;
+        padding: 16px 20px;
+      }
+
+      details summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      #inventoryList {
+        margin: 12px 0 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 10px;
+      }
+
+      #inventoryList code,
+      #notes code {
+        padding: 2px 6px;
+        border-radius: 6px;
+        background: rgba(15, 23, 42, 0.08);
+        font-family: 'SFMono-Regular', 'Fira Code', 'Source Code Pro', Menlo, Consolas, monospace;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        #inventoryList code,
+        #notes code {
+          background: rgba(148, 163, 184, 0.18);
+        }
+      }
+
+      #notes {
+        margin-top: 32px;
+        padding: 18px 20px;
+        border-left: 4px solid #2563eb;
+        background: rgba(37, 99, 235, 0.08);
+        border-radius: 12px;
+        font-size: 0.98rem;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        #notes {
+          background: rgba(96, 165, 250, 0.12);
+          border-color: rgba(96, 165, 250, 0.65);
+        }
+      }
+
+      #notes ul {
+        margin: 0.5em 0 0.75em 1em;
+      }
+
+      footer {
+        margin-top: 48px;
+        font-size: 0.85rem;
+        color: rgba(17, 24, 39, 0.65);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        footer {
+          color: rgba(226, 232, 240, 0.65);
+        }
+      }
+
+      .hidden {
+        display: none !important;
+      }
     </style>
   </head>
   <body>
-    <h1>Welshpeak</h1>
-    <p class="muted">For this test, type normal Welsh text (e.g., <i>Cymru am byth</i>). We’ll switch to IPA after the engine API is confirmed.</p>
+    <main>
+      <h1>Welshpeak</h1>
+      <p class="lead">Type Welsh phonemes in IPA, then let eSpeak-NG (compiled to WebAssembly) pronounce them directly in your browser. Unsupported symbols are automatically approximated to the closest Welsh sound so synthesis never fails.</p>
 
-    <textarea id="ipaInput" rows="3" placeholder="Cymru am byth"></textarea><br/>
-    <button id="playBtn">Play</button>
-    <button id="stopBtn">Stop</button>
-    <div id="status" class="muted"></div>
+      <label for="ipaInput" class="lead" style="display:block; font-weight:600; margin: 24px 0 10px;">Welsh IPA input</label>
+      <textarea id="ipaInput" placeholder="ˈkəmri aːm bəθ" aria-label="Welsh IPA input"></textarea>
+
+      <div class="controls">
+        <button id="playBtn" class="primary" disabled>Play</button>
+        <button id="stopBtn" class="ghost" disabled>Stop</button>
+        <span id="status">Loading eSpeak-NG…</span>
+      </div>
+
+      <details>
+        <summary>Supported Welsh IPA symbols</summary>
+        <p style="margin: 12px 0 4px;">Characters outside this inventory will be mapped to the closest Welsh equivalent:</p>
+        <div id="inventoryList"></div>
+      </details>
+
+      <section id="notes" class="hidden" aria-live="polite"></section>
+
+      <footer>
+        Entirely client-side. Voices provided by eSpeak-NG via WebAssembly; audio never leaves your browser.
+      </footer>
+    </main>
 
     <script type="module">
-      import initEspeak from "./vendor/espeakng/espeak-ng.js";
+      import initEspeak from './vendor/espeakng/espeak-ng.js';
 
-      const statusEl = document.getElementById("status");
-      const setStatus = (msg) => statusEl.textContent = msg;
+      const FALLBACK_SYMBOL = 'ə';
 
-      let Module = null;
+      const BASE_WELSH_IPA = [
+        'a', 'e', 'i', 'o', 'u', 'ɨ', 'ə', 'ɛ', 'ɪ', 'ʊ', 'ɔ',
+        'p', 'b', 't', 'd', 'k', 'g', 'ɡ', 'm', 'n', 'ŋ', 'f', 'v',
+        'θ', 'ð', 's', 'ʃ', 'h', 'x', 'ɣ', 'ɬ', 'l', 'r', 'ɾ', 'w', 'j'
+      ];
 
-      try {
-        Module = await initEspeak({
-          locateFile: (p) => `./vendor/espeakng/${p}`
-        });
-        console.log("eSpeak-NG initialized?", !!Module);
+      const ALLOWED_SYMBOLS = new Set([
+        ...BASE_WELSH_IPA,
+        'ː', 'ˑ', 'ˈ', 'ˌ', '͡', '.', '-', 'ʼ', 'ʰ', '̥', '̬', '̃', '̞', '̠',
+        ' '
+      ]);
 
-        // Show keys so we can see what's exposed
-        const keys = Object.keys(Module).sort();
-        console.log("Module keys:", keys);
+      const APPROXIMATIONS = new Map(Object.entries({
+        'ɫ': 'l',
+        'ɮ': 'ɬ',
+        'z': 's',
+        'ʒ': 'ʃ',
+        'ʐ': 'ʃ',
+        'ʑ': 'ʃ',
+        'c': 'k',
+        'q': 'k',
+        'ɟ': 'g',
+        'ɡ': 'g',
+        'ɕ': 'ʃ',
+        'ɲ': 'ŋ',
+        'ɱ': 'm',
+        'β': 'v',
+        'ɸ': 'f',
+        'χ': 'x',
+        'ʁ': 'ɣ',
+        'ʀ': 'r',
+        'ɹ': 'r',
+        'ɻ': 'r',
+        'ɽ': 'ɾ',
+        'ɰ': 'w',
+        'ʋ': 'v',
+        'y': 'ɨ',
+        'ʏ': 'ʊ',
+        'ø': 'o',
+        'œ': 'o',
+        'ɯ': 'u',
+        'ɤ': 'o',
+        'ɜ': 'ə',
+        'ɞ': 'o',
+        'ɘ': 'ə',
+        'ɚ': 'ə',
+        'ɐ': 'a',
+        'ã': 'ã',
+        'õ': 'õ',
+        'ʲ': 'j',
+        'ʷ': 'w',
+        'ˠ': '',
+        'ˤ': '',
+        'ʔ': 'h'
+      }));
 
-        // Try to detect a high-level API
-        const setVoice = Module.setVoice || Module.setVoiceName || Module.loadVoice || Module.setvoice || null;
-        const speak = Module.speak || Module.synthesize || Module.say || null;
+      const PASS_THROUGH_REGEX = /[\s\.ːˑˈˌ͡'ʼʰ̥̬̞̠̃-]/u;
 
-        console.log("Has setVoice-like:", !!setVoice);
-        console.log("Has speak-like:", !!speak);
+      const inventoryList = document.getElementById('inventoryList');
+      const ipaInput = document.getElementById('ipaInput');
+      const playBtn = document.getElementById('playBtn');
+      const stopBtn = document.getElementById('stopBtn');
+      const statusEl = document.getElementById('status');
+      const notesEl = document.getElementById('notes');
 
-        // Wire Play using whatever is available
-        document.getElementById("playBtn").onclick = async () => {
-          const text = (document.getElementById("ipaInput").value || "Cymru am byth").trim();
+      const escapeAttr = (value) => value
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 
-          if (setVoice && speak) {
-            try {
-              // try setting Welsh (cy); some builds accept 'cy' or 'welsh'
-              const voiceCode = "cy";
-              const vr = await Promise.resolve(setVoice.call(Module, voiceCode));
-              console.log("setVoice result:", vr);
-            } catch (e) {
-              console.warn("setVoice failed (continuing):", e);
-            }
+      const escapeHtml = (value) => value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 
-            try {
-              const r = await Promise.resolve(speak.call(Module, text));
-              console.log("speak result:", r);
-              setStatus("Played via high-level API.");
-            } catch (e) {
-              console.error("speak failed:", e);
-              setStatus("High-level speak failed. Check console.");
-            }
-            return;
+      const inventoryMarkup = Array.from(new Set(BASE_WELSH_IPA.concat(['ː', 'ˈ', 'ˌ', '.', '͡'])))
+        .sort((a, b) => a.localeCompare(b))
+        .map((symbol) => `<code>${escapeHtml(symbol)}</code>`)
+        .join(' ');
+      inventoryList.innerHTML = inventoryMarkup;
+
+      let espeakModule = null;
+      let audioContext = null;
+      let currentSource = null;
+
+      const setStatus = (text) => {
+        statusEl.textContent = text;
+      };
+
+      function sanitizeIpa(raw) {
+        const normalized = raw.normalize('NFC');
+        const output = [];
+        const replacements = [];
+
+        for (const ch of normalized) {
+          if (ALLOWED_SYMBOLS.has(ch) || PASS_THROUGH_REGEX.test(ch)) {
+            output.push(ch);
+            continue;
           }
 
-          setStatus("Engine API not available in this build (no speak()/setVoice()). We’ll switch approach next.");
-          console.warn("No high-level API found; keys:", keys);
-        };
-
-        document.getElementById("stopBtn").onclick = () => {
-          // Some builds expose stop()/cancel(); attempt if present
-          const stop = Module.stop || Module.cancel || null;
-          if (stop) {
-            try { stop.call(Module); setStatus("Stopped."); } catch(e) { console.warn("stop failed:", e); }
-          } else {
-            setStatus("Stop not supported in this build.");
+          const lower = ch.toLowerCase();
+          if (lower !== ch && (ALLOWED_SYMBOLS.has(lower) || PASS_THROUGH_REGEX.test(lower))) {
+            output.push(lower);
+            replacements.push({ from: ch, to: lower, reason: 'converted to lowercase Welsh phoneme' });
+            continue;
           }
-        };
 
-      } catch (err) {
-        console.error("eSpeak-NG init failed:", err);
-        setStatus("Engine failed to initialize. See console.");
+          const approx = APPROXIMATIONS.get(ch) ?? APPROXIMATIONS.get(lower);
+          if (typeof approx === 'string') {
+            output.push(approx);
+            replacements.push({ from: ch, to: approx || '(removed)', reason: 'approximated to supported phoneme' });
+            continue;
+          }
+
+          if (/\s/u.test(ch)) {
+            output.push(' ');
+            continue;
+          }
+
+          output.push(FALLBACK_SYMBOL);
+          replacements.push({ from: ch, to: FALLBACK_SYMBOL, reason: 'defaulted to schwa' });
+        }
+
+        let display = output.join('');
+        let phonemeString = display.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+
+        if (!phonemeString) {
+          phonemeString = FALLBACK_SYMBOL;
+          display = FALLBACK_SYMBOL;
+          replacements.push({ from: '∅', to: FALLBACK_SYMBOL, reason: 'added fallback syllable' });
+        }
+
+        return { display, phonemeString, replacements };
       }
+
+      function updateNotes(display, replacements) {
+        if (!display && !replacements.length) {
+          notesEl.classList.add('hidden');
+          notesEl.innerHTML = '';
+          return;
+        }
+
+        const parts = [];
+
+        if (replacements.length) {
+          const counts = new Map();
+          for (const { from, to, reason } of replacements) {
+            const key = `${from}→${to}`;
+            const existing = counts.get(key) ?? { count: 0, reason };
+            existing.count += 1;
+            counts.set(key, existing);
+          }
+          const listItems = Array.from(counts.entries())
+            .map(([pair, meta]) => `<li><code>${escapeHtml(pair)}</code> × ${meta.count} — ${escapeHtml(meta.reason)}</li>`)
+            .join('');
+          parts.push('<p>Approximated unsupported symbols:</p>');
+          parts.push(`<ul>${listItems}</ul>`);
+        }
+
+        parts.push('<p style="margin: 0.35em 0 0.5em;">Phonemes passed to eSpeak-NG:</p>');
+        parts.push(`<pre style="margin:0;"><code>${escapeHtml(display)}</code></pre>`);
+
+        notesEl.innerHTML = parts.join('');
+        notesEl.classList.remove('hidden');
+      }
+
+      async function ensureAudioContext() {
+        if (!audioContext) {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
+        }
+        return audioContext;
+      }
+
+      function runEspeak(args) {
+        const stack = espeakModule.stackSave();
+        try {
+          const argc = args.length;
+          const argv = espeakModule.stackAlloc((argc + 1) * 4);
+          let ptr = argv;
+          for (const arg of args) {
+            const strPtr = espeakModule.stringToUTF8OnStack(String(arg));
+            espeakModule.HEAPU32[ptr >> 2] = strPtr;
+            ptr += 4;
+          }
+          espeakModule.HEAPU32[ptr >> 2] = 0;
+          const exitCode = espeakModule._main(argc, argv);
+          return exitCode;
+        } finally {
+          espeakModule.stackRestore(stack);
+        }
+      }
+
+      async function synthesize(phonemeString) {
+        const outputPath = '/tmp/welsh.wav';
+        try {
+          espeakModule.FS_unlink(outputPath);
+        } catch (err) {
+          if (err?.code !== 'ENOENT') {
+            console.warn('Failed to clear previous audio file', err);
+          }
+        }
+
+        const ssml = `<speak><phoneme alphabet="ipa" ph="${escapeAttr(phonemeString)}"/></speak>`;
+        const args = ['espeak-ng', '-m', '-v', 'cy', '-w', outputPath, ssml];
+        const code = runEspeak(args);
+        if (code !== 0) {
+          throw new Error(`eSpeak-NG returned exit code ${code}`);
+        }
+        return espeakModule.FS.readFile(outputPath);
+      }
+
+      async function playBuffer(wavData) {
+        const ctx = await ensureAudioContext();
+        const wavCopy = wavData.buffer.slice(wavData.byteOffset, wavData.byteOffset + wavData.byteLength);
+        const audioBuffer = await new Promise((resolve, reject) => {
+          ctx.decodeAudioData(wavCopy, resolve, reject);
+        });
+
+        if (currentSource) {
+          currentSource.stop();
+          currentSource.disconnect();
+          currentSource = null;
+        }
+
+        const source = ctx.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(ctx.destination);
+        source.start();
+        stopBtn.disabled = false;
+        currentSource = source;
+        source.onended = () => {
+          if (currentSource === source) {
+            currentSource.disconnect();
+            currentSource = null;
+            stopBtn.disabled = true;
+            setStatus('Ready. Enter another IPA phrase to play.');
+          }
+        };
+      }
+
+      stopBtn.addEventListener('click', () => {
+        if (currentSource) {
+          currentSource.stop();
+          currentSource.disconnect();
+          currentSource = null;
+          stopBtn.disabled = true;
+          setStatus('Playback stopped.');
+        }
+      });
+
+      playBtn.addEventListener('click', async () => {
+        if (!espeakModule) {
+          return;
+        }
+
+        const raw = ipaInput.value.trim();
+        if (!raw) {
+          setStatus('Enter a Welsh IPA string to speak.');
+          updateNotes('', []);
+          return;
+        }
+
+        const { display, phonemeString, replacements } = sanitizeIpa(raw);
+        updateNotes(display, replacements);
+
+        try {
+          playBtn.disabled = true;
+          setStatus('Synthesizing with eSpeak-NG…');
+          const wavData = await synthesize(phonemeString);
+          setStatus('Playing Welsh IPA audio…');
+          await playBuffer(wavData);
+        } catch (err) {
+          console.error(err);
+          setStatus('Unable to synthesise that input. See console for details.');
+        } finally {
+          playBtn.disabled = false;
+        }
+      });
+
+      (async () => {
+        try {
+          espeakModule = await initEspeak({
+            noInitialRun: true,
+            locateFile: (path) => `./vendor/espeakng/${path}`
+          });
+          try {
+            espeakModule.FS.mkdir('/tmp');
+          } catch (err) {
+            if (err?.code !== 'EEXIST') {
+              console.warn('Unable to prepare /tmp directory', err);
+            }
+          }
+          setStatus('Welsh voice ready. Type IPA and press Play.');
+          playBtn.disabled = false;
+        } catch (err) {
+          console.error('Failed to initialise eSpeak-NG', err);
+          setStatus('Unable to load eSpeak-NG. Try refreshing the page.');
+        }
+      })();
     </script>
   </body>
 </html>
